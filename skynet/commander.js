@@ -1,3 +1,4 @@
+import Promise from 'bluebird'
 import reduce from 'lodash.reduce'
 
 import { CommanderActionNotFoundError } from '../errors'
@@ -18,9 +19,15 @@ export default class Commander {
   }
 
   execute(commands) {
-    const action = reduce(this.commandPath, reducer, commands)
+    return new Promise((res, rej) => {
+      const action = reduce(this.commandPath, reducer, commands)
 
-    if (!action) return Promise.reject(new CommanderActionNotFoundError())
-    return action(this.speech, this.params, this.resolvedQuery)
+      if (!action) {
+        rej(new CommanderActionNotFoundError())
+        return
+      }
+
+      res(action(this.speech, this.params, this.resolvedQuery))
+    })
   }
 }

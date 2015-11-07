@@ -1,53 +1,68 @@
+import each from 'lodash.foreach'
+import flatten from 'lodash.flatten'
+import map from 'lodash.map'
 import Promise from 'bluebird'
 import request from 'superagent'
-import { parseString } from 'xml2js'
 
+import Archaeologist from './archaeologist'
 import logger from '../logger'
 
 const wolframAlphaUrl = 'http://api.wolframalpha.com/v2/query'
+
+const parseSubPod = (arc) => (subPod) => {
+  const text = arc.find('plaintext[0]', subPod)
+  const image = arc.find('img[0].$.src', subPod)
+
+  return { text, image }
+}
+
+const parsePod = (arc) => (pod) => {
+  const title = arc.find('$.title', pod)
+  const subpods = arc.find('subpod', pod)
+  const subdata = map(subpods, parseSubPod(arc))
+
+  let text = ''
+  const images = []
+
+  each(subdata, (sub) => {
+    text += (sub.text !== '') ? `${sub.text}\n---------\n` : ''
+    images.push(sub.image)
+  })
+
+  if (text !== '') text = `${title}\n\n` + text + '\n'
+
+  return { text, images }
+}
+
+const processRequest = (res, rej) => (err, response) => {
+  if (err) return rej(err)
+
+  const arc = new Archaeologist(response.text)
+  arc.excavate()
+    .then(() => {
+      let speech = ''
+      let images = []
+      const success = arc.find('queryresult.$.success')
+
+      if (!success) {
+        res({ speech })
+        return
+      }
+
+      const pods = arc.find('queryresult.pod')
+      const dataSet = map(pods, parsePod(arc))
+
+      speech = map(dataSet, (data) => data.text).join('')
+      images = flatten(map(dataSet, (data) => data.images), true).reverse()
+
+      logger.info({ speech, images }, 'wolfram alpha response')
+      res({ speech, images })
+    })
+}
 
 export default (query) => new Promise((res, rej) => {
   request
     .get(wolframAlphaUrl)
     .query({ input: query, appid: process.env.WOLFRAM_ALPHA_APP_ID })
-    .end((err, response) => {
-      if (err) return rej(err)
-
-      parseString(response.text, (xmlErr, result) => {
-        if (xmlErr) return rej(xmlErr)
-        if (result.queryresult.$.success === 'false') {
-          return res({ speech: '' })
-        }
-
-        let wikipediaUrl = ''
-        let imageUrl = ''
-        let initialResponse = result.queryresult.pod[1].subpod[0].plaintext[0]
-
-        if (initialResponse === '') {
-          initialResponse = 'Here is an image.'
-          imageUrl = result.queryresult.pod[1].subpod[0].img[0].$.src
-        }
-
-        result.queryresult.pod.forEach((pod) => {
-          if (pod.$.title === 'Wikipedia summary') {
-            wikipediaUrl = pod.infos[0].info[0].link[0].$.url
-          }
-
-          if (pod.$.title === 'Image') {
-            imageUrl = pod.subpod[0].img[0].$.src
-          }
-        })
-
-        if (wikipediaUrl) {
-          initialResponse = `${initialResponse}\nwikipedia | ${wikipediaUrl}`
-        }
-
-        const respObj = { speech: initialResponse }
-
-        if (imageUrl) respObj.mediaUrl = imageUrl
-
-        logger.info(result.queryresult.pod, 'wolfram alpha response')
-        res(respObj)
-      })
-    })
+    .end(processRequest(res, rej))
 })
