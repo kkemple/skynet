@@ -16,10 +16,15 @@ const handler = (request, reply) => {
       const messageConfig = {
         to: request.payload.From,
         from: request.payload.To,
-        body: response.speech,
       }
 
-      if (response.mediaUrl) messageConfig.mediaUrl = response.mediaUrl
+      if (response.speech.length > 1600) {
+        messageConfig.body = response.speech.substring(0, 1597) + '...'
+      } else {
+        messageConfig.body = response.speech
+      }
+
+      if (response.images) messageConfig.mediaUrl = response.images.slice(0, 10)
 
       twilio.messages.create(messageConfig, (err) => {
         if (err) {

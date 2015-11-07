@@ -40,11 +40,15 @@
     "jsonwebtoken": "^5.4.1",
     "knex": "^0.8.6",
     "lodash.assign": "^3.2.0",
+    "lodash.flatten": "^3.0.2",
+    "lodash.foreach": "^3.0.3",
+    "lodash.isarray": "^3.0.4",
+    "lodash.map": "^3.1.4",
     "lodash.reduce": "^3.1.2",
     "pg": "^4.4.3",
     "superagent": "^1.4.0",
     "twilio": "^2.5.1",
-    "xml2js": "^0.4.13"
+    "xml2js": "^0.4.15"
   },
   "devDependencies": {
     "babel-eslint": "^4.1.3",
