@@ -5,34 +5,31 @@ import Promise from 'bluebird'
 import request from 'superagent'
 
 import Archaeologist from './archaeologist'
+import logger from '../logger'
 
 const wolframAlphaUrl = 'http://api.wolframalpha.com/v2/query'
 
 const parseSubPod = (arc) => (subPod) => {
-  const plaintext = arc.analyze('plaintext[0]', subPod)
-  const image = arc.analyze('img[0].$.src', subPod)
-  console.log(arc.analyze('img[0].$', subPod))
+  const text = arc.find('plaintext[0]', subPod)
+  const image = arc.find('img[0].$.src', subPod)
 
-  return {
-    plaintext,
-    image: image,
-  }
+  return { text, image }
 }
 
 const parsePod = (arc) => (pod) => {
-  const title = arc.analyze('$.title', pod)
-  const subpods = arc.analyze('subpod', pod)
+  const title = arc.find('$.title', pod)
+  const subpods = arc.find('subpod', pod)
   const subdata = map(subpods, parseSubPod(arc))
 
-  let text = `${title}\n`
+  let text = ''
   const images = []
 
   each(subdata, (sub) => {
-    text += `${sub.plaintext}\n---------\n`
+    text += (sub.text !== '') ? `${sub.text}\n---------\n` : ''
     images.push(sub.image)
   })
 
-  text += '\n'
+  if (text !== '') text = `${title}\n` + text + '\n'
 
   return { text, images }
 }
@@ -45,18 +42,20 @@ const processRequest = (res, rej) => (err, response) => {
     .then(() => {
       let speech = ''
       let images = []
-      const success = arc.analyze('queryresult.$.success')
+      const success = arc.find('queryresult.$.success')
 
       if (!success) {
         res({ speech })
         return
       }
 
-      const pods = arc.analyze('queryresult.pod')
+      const pods = arc.find('queryresult.pod')
       const dataSet = map(pods, parsePod(arc))
 
       speech = map(dataSet, (data) => data.text).join('')
       images = flatten(map(dataSet, (data) => data.images), true).reverse()
+
+      logger.info({ speech, images }, 'wolfram alpha response')
       res({ speech, images })
     })
 }

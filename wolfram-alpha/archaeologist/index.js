@@ -37,7 +37,7 @@ export default class Archaeologist {
     })
   }
 
-  analyze(artifact, source) {
+  find(artifact, source) {
     const scrubbedArtifact = artifact
       .replace(/\[(\w+)\]/g, '.$1')
       .replace(/^\./, '')
