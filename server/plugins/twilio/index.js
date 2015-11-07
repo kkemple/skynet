@@ -27,6 +27,18 @@ const processSkynetResponse = (request, reply) => (response) => {
       logger.error(err)
       return
     }
+
+    if (response.speech.length > 1600) {
+      messageConfig.mediaUrl.length = 0
+      messageConfig.body = `...${response.speech.substring(1597)}`
+
+      twilio.messages.create(messageConfig, (err2) => {
+        if (err2) {
+          logger.error(err2)
+          return
+        }
+      })
+    }
   })
 
   reply('ok')
