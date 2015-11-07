@@ -29,7 +29,7 @@ const parsePod = (arc) => (pod) => {
     images.push(sub.image)
   })
 
-  if (text !== '') text = `${title}\n` + text + '\n'
+  if (text !== '') text = `${title}\n\n` + text + '\n'
 
   return { text, images }
 }
