@@ -4,7 +4,7 @@ import map from 'lodash.map'
 import Promise from 'bluebird'
 import request from 'superagent'
 
-import Archaeologist from './archaeologist'
+import Archaeologist from '../archaeologist'
 import logger from '../logger'
 
 const wolframAlphaUrl = 'http://api.wolframalpha.com/v2/query'

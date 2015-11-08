@@ -1,8 +1,8 @@
 import chai from 'chai'
 import Promise from 'bluebird'
 
-import Archaeologist from '../../../wolfram-alpha/archaeologist'
-import { wolframAlphaData } from '../../fixtures'
+import Archaeologist from '../../../archaeologist'
+import { wolframAlphaData } from '../fixtures'
 
 chai.should()
 
