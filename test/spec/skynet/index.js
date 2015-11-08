@@ -6,6 +6,9 @@ import skynet from '../../../skynet'
 
 chai.should()
 
+const wolframSuccessResponse = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<queryresult success="false"></queryresult>'
+
 describe('Skynet', () => {
   it('should be a function', () => {
     skynet.should.be.a('function')
@@ -36,6 +39,11 @@ describe('Skynet', () => {
             parameters: {},
           },
         })
+
+      nock('http://api.wolframalpha.com')
+        .get('/v2/query')
+        .query(true)
+        .reply(200, wolframSuccessResponse)
 
       skynet('hey there')
         .then((config) => {
